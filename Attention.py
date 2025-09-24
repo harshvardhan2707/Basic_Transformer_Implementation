@@ -88,7 +88,7 @@ class MaskedMultiHeadAttention(nn.Module):#I will include batch in this
 
 
     def forward(self, q, k, v, masked=False):
-        batch_size, seq_length, input_emb = x.size()
+        batch_size, seq_length, input_emb = q.size()
         Q = self.query_proj(q)
         K = self.key_proj(k)
         V = self.value_proj(v)
@@ -109,16 +109,14 @@ class MaskedMultiHeadAttention(nn.Module):#I will include batch in this
 
 
 
-class TransformerDecoderLayer(nn.Module):
-    def __init__(self, )
+if __name__ == "__main__":
+    #X = MaskedSelfAttention(4,6,8)
+    #a = torch.ones([12, 4])
+    #f = X(a)
 
-#X = MaskedSelfAttention(4,6,8)
-#a = torch.ones([12, 4])
-#f = X(a)
-
-a = torch.rand(4, 7, 10) #[batch_size, seq_length, input_emb_dim]
-#multihead = MaskedMultiHeadSelfAttention(input_emb = 10, kq_emb = 10, v_emb = 10, num_heads = 2)
-#output = multihead(a, masked=True)
-out, pos = apply_absolute_positional_encoding(a)
-#a1 = apply_rope(a)
-breakpoint()
+    a = torch.rand(4, 7, 10) #[batch_size, seq_length, input_emb_dim]
+    #multihead = MaskedMultiHeadSelfAttention(input_emb = 10, kq_emb = 10, v_emb = 10, num_heads = 2)
+    #output = multihead(a, masked=True)
+    out, pos = apply_absolute_positional_encoding(a)
+    #a1 = apply_rope(a)
+    breakpoint()

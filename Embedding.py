@@ -12,6 +12,14 @@ class InputEmbedding(nn.Module):
         embeddings = self.embedding(token_ids)
         return embeddings
 
+class OutputUnembedding(nn.Module):
+    def __init__(self, input_embedding):
+        self.output_embedding = input_embedding.embedding
+
+    def forward(self, x):
+        x = x@(self.output_embedding.T)
+        return x
+
 if __name__ == "__main__":
     with open('tokenizer_smaller.pkl', 'rb') as f:
         tokenizer = pickle.load(f)

@@ -2,6 +2,7 @@ import os
 import string
 from collections import Counter
 from tqdm import tqdm
+import torch
 
 class BytePairEncoding():
     def __init__(self, vocab_size = 1024):
@@ -100,7 +101,7 @@ class BytePairEncoding():
         for t in text_split:
             text_tokens = self.per_word_tokens(t)
             tokens.extend(text_tokens)
-        return tokens
+        return torch.tensor(tokens)
             
     def decoding(self, tokens):
         return [self.reverse_vocab[i] for i in tokens]
