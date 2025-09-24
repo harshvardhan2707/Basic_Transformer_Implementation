@@ -19,7 +19,6 @@ class OutputUnembedding(nn.Module):
 
     def forward(self, x):
         x = x@(self.output_embedding.T) #(batch_size, seq_length, output_dim) -->  (batch_size, seq_length, vocab_size)
-        x = x.softmax(dim=-1)
         return x
 
 if __name__ == "__main__":
