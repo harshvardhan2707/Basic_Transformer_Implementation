@@ -9,7 +9,7 @@ class InputEmbedding(nn.Module):
         self.embedding = nn.Embedding(num_embeddings = vocab_size, embedding_dim = output_dim, max_norm = 1.0)
 
     def forward(self, token_ids):
-        embeddings = self.embedding(token_ids)
+        embeddings = self.embedding(token_ids) #(batch_size, seq_length) --> (batch_size, seq_length, output_dim)
         return embeddings
 
 class OutputUnembedding(nn.Module):
@@ -18,7 +18,8 @@ class OutputUnembedding(nn.Module):
         self.output_embedding = input_embedding.embedding.weight
 
     def forward(self, x):
-        x = x@(self.output_embedding.T)
+        x = x@(self.output_embedding.T) #(batch_size, seq_length, output_dim) -->  (batch_size, seq_length, vocab_size)
+        x = x.softmax(dim=-1)
         return x
 
 if __name__ == "__main__":
