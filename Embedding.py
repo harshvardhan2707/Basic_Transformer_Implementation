@@ -14,7 +14,8 @@ class InputEmbedding(nn.Module):
 
 class OutputUnembedding(nn.Module):
     def __init__(self, input_embedding):
-        self.output_embedding = input_embedding.embedding
+        super().__init__()
+        self.output_embedding = input_embedding.embedding.weight
 
     def forward(self, x):
         x = x@(self.output_embedding.T)
