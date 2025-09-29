@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from Tokenizer import BytePairEncoding
 import pickle
 
 class InputEmbedding(nn.Module):
@@ -22,10 +21,4 @@ class OutputUnembedding(nn.Module):
         return x
 
 if __name__ == "__main__":
-    with open(f"{input('Input tokenizer path: ')}", 'rb') as f:
-        tokenizer = pickle.load(f)
-    word_embeddings = InputEmbedding(vocab_size = tokenizer.vocab_size, output_dim = 256)
-    String = f"{input('Input sentence: ')}"
-    tokens = torch.tensor(tokenizer.encoding(String))
-    F = word_embeddings(tokens)
-    breakpoint()
+    print("Embedding")

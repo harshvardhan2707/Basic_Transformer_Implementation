@@ -113,13 +113,14 @@ class BytePairEncoding():
         self.initialize_vocab()
         self.add_vocab()
 
-def save_tokenizer(self, path):
+def save_tokenizer(tokenizer, path):
     import pickle
     with open(path, 'wb') as f:
-        pickle.dump(path, f)
+        pickle.dump(tokenizer, f)
 
 if __name__ == "__main__":
     tokenizer = BytePairEncoding(vocab_size = 1024)
-    tokenizer.run_byte_pair("/home/cv-research/Transformer/shakespeare-dataset/text")
-    tokens = tokenizer.encoding("Hello my name is Anthony Gonzalves")
+    tokenizer.run_byte_pair(f"{input('Enter text corpus path: ')}")
+    tokens = tokenizer.encoding(f"{input('Enter random text: ')}")
+    save_tokenizer(tokenizer, f"{input('Enter tokenizer save path: ')}") 
     breakpoint()

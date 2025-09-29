@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from Embedding import InputEmbedding, OutputUnembedding
-from Tokenizer import BytePairEncoding
 from Transformer import CausalDecoderOnlyTransformer
 import pickle
 from Attention import apply_rope
@@ -12,6 +11,7 @@ from Dataloader import TextCorpusDataset, collate_fn
 from torch.utils.data import DataLoader, Dataset
 import wandb
 import argparse
+from transformers import AutoTokenizer
 
 class Model(nn.Module):
     def __init__(self, num_layers = 4, embedding_size = 256, num_heads = 8, mlp_ratio = 4, bias = False, vocab_size = 1024):
@@ -54,17 +54,15 @@ if __name__ == "__main__":
                 "batch_size": args.batch_size
                 })
     device = "cuda"
-    model = Model().to(device)
+    tokenizer = AutoTokenizer.from_pretrained(f"{input('Enter tokenizer/huggingface path: ')}")
+    model = Model(vocab_size = len(tokenizer.get_vocab())).to(device)
     #x = "Hello my name is Anthony Gonzalves"
     #input_ids = model.tokenize(x)
     #output = model(input_ids)
     epochs = args.epochs
     block_size = args.block_size
     batch_size = args.batch_size
-    tokenizer_path = f"{input('Enter tokenizer path: ')}"
-    with open(tokenizer_path, 'rb') as f:
-        tokenizer = pickle.load(f)
-    dataset = TextCorpusDataset(txt_dir = f"{input('Enter text corpus path: ')}", tokenizer = tokenizer, block_size = block_size)
+    dataset = TextCorpusDataset(txt_dir = f"{input('Enter Text corpus path: ')}", tokenizer = tokenizer, block_size = block_size)
     dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = True, drop_last = True, collate_fn = collate_fn)
     criterion = nn.CrossEntropyLoss()
     if(args.optimizer.lower() == "adamw"):
@@ -80,7 +78,6 @@ if __name__ == "__main__":
     loss_list = []
     BASE_PATH = 'runs/' + args.project_name
     os.makedirs(BASE_PATH, exist_ok=True)
-
     for epoch in tqdm(range(epochs)):
         losses = 0.0
         for batch_idx, (inputs, targets) in enumerate(dataloader):

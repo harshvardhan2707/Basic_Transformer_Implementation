@@ -2,6 +2,7 @@ import os
 from torch.utils.data import DataLoader, Dataset
 import torch
 import pickle
+from transformers import AutoTokenizer
 
 class TextCorpusDataset(Dataset):
     def __init__(self, txt_dir, tokenizer, block_size):
@@ -16,13 +17,14 @@ class TextCorpusDataset(Dataset):
             path = os.path.join(txt_dir, fname)
             with open(path, 'r', encoding='utf-8') as f:
                 text = f.read()
-            tokens = self.tokenizer.encoding(text)
-            self.doc_tokens_list.append(tokens)
+            #tokens = self.tokenizer.encoding(text)
+            tokens = self.tokenizer(text,return_tensors="pt")
+            self.doc_tokens_list.append(tokens['input_ids'].squeeze())
             print("Done path", path)
 
         for doc_idx,tokens in enumerate(self.doc_tokens_list):
             n = len(tokens)
-            if(n <= block_size):#Currently just dropping ones which are of lesser size than 
+            if(n <= block_size):#Currently just dropping ones which are of lesser size than block_size
                 continue
             for token_idx in range(0, (n-1)//block_size):
                 self.idx_map.append((doc_idx, token_idx*block_size))
@@ -44,14 +46,12 @@ def collate_fn(batch):
     return inputs, targets
 
 if __name__ == "__main__":
-    tokenizer_path = f"{input('Enter tokenizer path: ')}"
-    with open(tokenizer_path, 'rb') as f:
-        tokenizer = pickle.load(f)
 
+    tokenizer = AutoTokenizer.from_pretrained(f"{input('Enter Tokenizer path:')}")
     block_size = 256
     batch_size = 32
 
-    dataset = TextCorpusDataset(txt_dir = f"{input('Enter text corpus path: ')}", tokenizer = tokenizer, block_size = block_size)
+    dataset = TextCorpusDataset(txt_dir = f"{input('Enter text corpus path:')}", tokenizer = tokenizer, block_size = block_size)
     dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = True, drop_last = True, collate_fn = collate_fn)
     for batch in dataloader:
         breakpoint()
