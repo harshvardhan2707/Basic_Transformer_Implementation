@@ -89,12 +89,12 @@ class MaskedMultiHeadAttention(nn.Module):#I will include batch in this
 
     def forward(self, q, k, v, masked=False):
         batch_size, seq_length, input_emb = q.size()
-        Q = self.query_proj(q)
-        K = self.key_proj(k)
-        V = self.value_proj(v)
-        Q = Q.view(batch_size, seq_length, self.num_heads, self.kq_head_dim).transpose(2,1) # [B, seq_length, kq_head_dim]---->[B, num_heads, seq_length, kq_head_dim]
-        K = K.view(batch_size, seq_length, self.num_heads, self.kq_head_dim).transpose(2,1) # [B, seq_length, kq_head_dim]---->[B, num_heads, seq_length, kq_head_dim]
-        V = V.view(batch_size, seq_length, self.num_heads, self.v_head_dim).transpose(2,1) # [B, seq_length, v_head_dim]---->[B, num_heads, seq_length, v_head_dim]
+        Q = self.query_proj(q) #[B, seq_length, input_emb] --> [B, seq_length, kq_emb]
+        K = self.key_proj(k) #[B, seq_length, input_emb] --> [B, seq_length, kq_emb]
+        V = self.value_proj(v) #[B, seq_length, input_emb] --> [B, seq_length, v_emb]
+        Q = Q.view(batch_size, seq_length, self.num_heads, self.kq_head_dim).transpose(2,1) # [B, seq_length, num_heads, kq_head_dim]---->[B, num_heads, seq_length, kq_head_dim]
+        K = K.view(batch_size, seq_length, self.num_heads, self.kq_head_dim).transpose(2,1) # [B, seq_length, num_heads, kq_head_dim]---->[B, num_heads, seq_length, kq_head_dim]
+        V = V.view(batch_size, seq_length, self.num_heads, self.v_head_dim).transpose(2,1) # [B, seq_length, num_heads, v_head_dim]---->[B, num_heads, seq_length, v_head_dim]
         attention_scores = (Q @ (K.transpose(-1,-2))) * (1 / self.kq_head_dim**0.5) # [B, num_heads, seq_length, seq_length]
         if masked:
             mask = torch.ones_like(attention_scores, dtype = torch.bool).triu(diagonal=1)
@@ -115,8 +115,8 @@ if __name__ == "__main__":
     #f = X(a)
 
     a = torch.rand(4, 7, 10) #[batch_size, seq_length, input_emb_dim]
-    #multihead = MaskedMultiHeadSelfAttention(input_emb = 10, kq_emb = 10, v_emb = 10, num_heads = 2)
-    #output = multihead(a, masked=True)
+    multihead = MaskedMultiHeadAttention(input_emb = 10, kq_emb = 12, v_emb = 16, num_heads = 2)
+    output = multihead(a, a, a, masked=True)
     out, pos = apply_absolute_positional_encoding(a)
     #a1 = apply_rope(a)
     breakpoint()
