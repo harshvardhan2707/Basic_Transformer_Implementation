@@ -5,7 +5,7 @@ import torch.optim as optim
 from Embedding import InputEmbedding, OutputUnembedding
 from Transformer import CausalDecoderOnlyTransformer
 import pickle
-from Attention import apply_rope
+from Attention import apply_absolute_positional_encoding
 from tqdm import tqdm
 from Dataloader import TextCorpusDataset, collate_fn
 from torch.utils.data import DataLoader, Dataset
@@ -14,20 +14,22 @@ import argparse
 from transformers import AutoTokenizer
 
 class Model(nn.Module):
-    def __init__(self, num_layers = 4, embedding_size = 256, num_heads = 8, mlp_ratio = 4, bias = False, vocab_size = 1024):
+    def __init__(self, num_layers = 4, embedding_size = 256, num_heads = 8, mlp_ratio = 4, bias = False, vocab_size = 1024, apply_rope=False):
         super().__init__()
         self.vocab_size = vocab_size
         self.embedding_dim = embedding_size
         self.num_heads = num_heads
         self.mlp_ratio = mlp_ratio
         self.bias = bias
+        self.rope = apply_rope
         self.input_embedding = InputEmbedding(vocab_size = self.vocab_size, output_dim = embedding_size)
-        self.decoder_transformer = CausalDecoderOnlyTransformer(num_layers = num_layers, embedding_size = embedding_size, num_heads = num_heads, mlp_ratio = mlp_ratio, bias = bias)
+        self.decoder_transformer = CausalDecoderOnlyTransformer(num_layers = num_layers, embedding_size = embedding_size, num_heads = num_heads, mlp_ratio = mlp_ratio, bias = bias, add_rope=apply_rope)
         self.output_unembedding = OutputUnembedding(self.input_embedding)
     
     def forward(self, input_ids):
         input_ids = self.input_embedding(input_ids)
-        input_ids = apply_rope(input_ids)
+        if(not self.rope):
+            input_ids, _ = apply_absolute_positional_encoding(input_ids)
         input_ids = self.decoder_transformer(input_ids)
         input_ids = self.output_unembedding(input_ids)
         return input_ids
@@ -41,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_freq", type=int, default=10, help="Save frequency of model")
     parser.add_argument("--block_size", type=int, default=256, help="Block size, basically till what token number the predictions will it be good")
     parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
+    parser.add_argument("--apply_rope",action='store_true', help="Whether to apply RoPE or not.")
     args = parser.parse_args()
     wandb.login()
     run = wandb.init(
@@ -51,11 +54,12 @@ if __name__ == "__main__":
                 "epochs": args.epochs,
                 "save_freq": args.save_freq,
                 "block_size": args.block_size,
-                "batch_size": args.batch_size
+                "batch_size": args.batch_size,
+                "apply_rope": args.apply_rope
                 })
     device = "cuda"
     tokenizer = AutoTokenizer.from_pretrained(f"{input('Enter tokenizer/huggingface path: ')}")
-    model = Model(vocab_size = len(tokenizer.get_vocab())).to(device)
+    model = Model(vocab_size = len(tokenizer.get_vocab()), apply_rope=args.apply_rope).to(device)
     #x = "Hello my name is Anthony Gonzalves"
     #input_ids = model.tokenize(x)
     #output = model(input_ids)
@@ -92,7 +96,7 @@ if __name__ == "__main__":
             #torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             #print("Done for batch", batch_idx)
-        loss_list += [losses]
+        loss_list += [losses/batch_size]
         wandb.log({"loss":losses})
         print(sum(loss_list)/len(loss_list))
         if(epoch%args.save_freq == 0):

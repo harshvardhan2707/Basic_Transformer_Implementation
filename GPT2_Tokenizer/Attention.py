@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torchtune.modules import RotaryPositionalEmbeddings
 
 def apply_absolute_positional_encoding(x, N = 10000):
     batch_size, seq_length, input_emb_dim = x.size()
@@ -71,8 +72,8 @@ class MaskedSelfAttention(nn.Module):
 
 
 
-class MaskedMultiHeadAttention(nn.Module):#I will include batch in this
-    def __init__(self, input_emb, kq_emb, v_emb, num_heads, bias = False):
+class MultiHeadAttention(nn.Module):#I will include batch in this
+    def __init__(self, input_emb, kq_emb, v_emb, num_heads, bias = False, add_rope = False):
         assert kq_emb%num_heads == 0
         assert v_emb%num_heads == 0
         super().__init__()
@@ -85,6 +86,9 @@ class MaskedMultiHeadAttention(nn.Module):#I will include batch in this
         self.key_proj = nn.Linear(input_emb, kq_emb, bias = bias)
         self.value_proj = nn.Linear(input_emb, v_emb, bias = bias)
         self.output_proj = nn.Linear(v_emb, v_emb, bias = bias)
+        self.rope = None
+        if(add_rope):
+            self.rope = RotaryPositionalEmbeddings(self.kq_head_dim)
 
 
     def forward(self, q, k, v, masked=False):
@@ -92,6 +96,11 @@ class MaskedMultiHeadAttention(nn.Module):#I will include batch in this
         Q = self.query_proj(q)
         K = self.key_proj(k)
         V = self.value_proj(v)
+        if(self.rope):
+            Q = Q.view(batch_size, seq_length, self.num_heads, self.kq_head_dim)
+            K = K.view(batch_size, seq_length, self.num_heads, self.kq_head_dim)
+            Q = self.rope(Q)
+            K = self.rope(K)
         Q = Q.view(batch_size, seq_length, self.num_heads, self.kq_head_dim).transpose(2,1) # [B, seq_length, kq_head_dim]---->[B, num_heads, seq_length, kq_head_dim]
         K = K.view(batch_size, seq_length, self.num_heads, self.kq_head_dim).transpose(2,1) # [B, seq_length, kq_head_dim]---->[B, num_heads, seq_length, kq_head_dim]
         V = V.view(batch_size, seq_length, self.num_heads, self.v_head_dim).transpose(2,1) # [B, seq_length, v_head_dim]---->[B, num_heads, seq_length, v_head_dim]
