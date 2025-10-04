@@ -96,7 +96,7 @@ if __name__ == "__main__":
             #torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             #print("Done for batch", batch_idx)
-        loss_list += [losses/batch_size]
+        loss_list += [losses/(batch_idx+1)]#batch_idx + 1 represents total number of batches
         wandb.log({"loss":losses})
         print(sum(loss_list)/len(loss_list))
         if(epoch%args.save_freq == 0):
